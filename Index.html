@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tarjetero Personal</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f3f3;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    header {
+      background: #0078ff;
+      color: white;
+      padding: 1rem;
+    }
+
+    #user-info {
+      margin: 1rem 0;
+    }
+
+    .upload-box {
+      border: 2px dashed #aaa;
+      border-radius: 10px;
+      padding: 20px;
+      background: white;
+      max-width: 400px;
+      margin: 1rem auto;
+      display: none;
+    }
+
+    .upload-label {
+      background: #0078ff;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 15px;
+      max-width: 800px;
+      margin: auto;
+      padding: 1rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .card img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+    }
+
+    button {
+      background: #0078ff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #005fcc;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 13px;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📇 Tarjetero Personal</h1>
+  </header>
+
+  <div id="user-info">
+    <button id="loginBtn">Iniciar sesión con Google</button>
+    <button id="logoutBtn" style="display:none;">Cerrar sesión</button>
+    <p id="userEmail"></p>
+  </div>
+
+  <div class="upload-box" id="uploadBox">
+    <label for="fileInput" class="upload-label">📤 Subir Imagen</label>
+    <input type="file" id="fileInput" accept="image/*" hidden />
+  </div>
+
+  <div class="gallery" id="gallery"></div>
+
+  <footer>
+    <p>Proyecto Firebase Tarjetero Personal</p>
+  </footer>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL, listAll } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-storage.js";
+
+    // Tu configuración
+    const firebaseConfig = {
+      apiKey: "AIzaSyAMcJot3v9EBnUHHDKxmAOdamawSrUN1J0",
+      authDomain: "tarjetero-8aa5e.firebaseapp.com",
+      projectId: "tarjetero-8aa5e",
+      storageBucket: "tarjetero-8aa5e.firebasestorage.app",
+      messagingSenderId: "1031258110983",
+      appId: "1:1031258110983:web:8819d24f7b113378f17ea2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
+    const provider = new GoogleAuthProvider();
+
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const uploadBox = document.getElementById("uploadBox");
+    const fileInput = document.getElementById("fileInput");
+    const gallery = document.getElementById("gallery");
+    const userEmail = document.getElementById("userEmail");
+
+    let currentUser = null;
+
+    // --- LOGIN ---
+    loginBtn.addEventListener("click", async () => {
+      await signInWithPopup(auth, provider);
+    });
+
+    // --- LOGOUT ---
+    logoutBtn.addEventListener("click", () => signOut(auth));
+
+    // --- CAMBIO DE ESTADO DE SESIÓN ---
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        uploadBox.style.display = "block";
+        userEmail.textContent = "Conectado como: " + user.email;
+        await loadImages();
+      } else {
+        currentUser = null;
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        uploadBox.style.display = "none";
+        userEmail.textContent = "";
+        gallery.innerHTML = "";
+      }
+    });
+
+    // --- SUBIR IMAGEN ---
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file || !currentUser) return;
+
+      const storageRef = ref(storage, usuarios/${currentUser.uid}/${file.name});
+      await uploadBytes(storageRef, file);
+      await loadImages();
+    });
+
+    // --- CARGAR IMÁGENES DEL USUARIO ---
+    async function loadImages() {
+      if (!currentUser) return;
+      gallery.innerHTML = "";
+
+      const listRef = ref(storage, usuarios/${currentUser.uid}/);
+      const res = await listAll(listRef);
+      for (const item of res.items) {
+        const url = await getDownloadURL(item);
+        const div = document.createElement("div");
+        div.classList.add("card");
+        div.innerHTML = <img src="${url}" alt="imagen">;
+        gallery.appendChild(div);
+      }
+    }
+  </script>
+</body>
+</html>
