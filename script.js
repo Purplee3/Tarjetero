@@ -1,93 +1,76 @@
-// Configura Firebase
+// ✅ Configuración de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMcJot3v9EBnUHHDKxmAOdamawSrUN1J0",
   authDomain: "tarjetero-8aa5e.firebaseapp.com",
   projectId: "tarjetero-8aa5e",
   storageBucket: "tarjetero-8aa5e.appspot.com",
+  messagingSenderId: "1031258110983",
+  appId: "1:1031258110983:web:8819d24f7b113378f17ea2"
 };
+
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
-const storage = firebase.storage();
 const db = firebase.firestore();
-
-console.log("✅ Firebase inicializado correctamente");
+const storage = firebase.storage();
 
 const googleLogin = document.getElementById("googleLogin");
 const editor = document.getElementById("editor");
 const login = document.getElementById("login");
 const userName = document.getElementById("userName");
 
-// Iniciar sesión con Google
+// 🔹 Iniciar sesión con Google
 googleLogin.onclick = async () => {
   try {
-    console.log("🟢 Intentando iniciar sesión con Google...");
     const provider = new firebase.auth.GoogleAuthProvider();
     const result = await auth.signInWithPopup(provider);
     const user = result.user;
-    console.log("✅ Sesión iniciada:", user.displayName);
 
     login.style.display = "none";
     editor.style.display = "block";
     userName.textContent = user.displayName;
-  } catch (error) {
-    console.error("❌ Error al iniciar sesión:", error);
-    alert("No se pudo iniciar sesión.");
+  } catch (err) {
+    alert("Error al iniciar sesión: " + err.message);
   }
 };
 
-// Guardar tarjeta
+// 🔹 Guardar tarjeta
 document.getElementById("guardar").onclick = async () => {
-  console.log("🟢 Botón GUARDAR presionado");
-
   const user = auth.currentUser;
-  if (!user) {
-    alert("Debes iniciar sesión primero.");
-    console.log("⚠️ No hay usuario autenticado");
-    return;
-  }
-
   const nombre = document.getElementById("nombre").value.trim();
-  const link = document.getElementById("link").value.trim();
+  const profesion = document.getElementById("profesion").value.trim();
+  const empresa = document.getElementById("empresa").value.trim();
+  const youtube = document.getElementById("youtube").value.trim();
+  const tiktok = document.getElementById("tiktok").value.trim();
   const foto = document.getElementById("foto").files[0];
 
-  if (!nombre || !foto || !link) {
-    alert("Completa todos los campos antes de continuar.");
-    console.log("⚠️ Campos vacíos");
+  if (!user) return alert("Primero inicia sesión con Google.");
+  if (!nombre || !profesion || !empresa || !foto) {
+    alert("Completa todos los campos obligatorios.");
     return;
   }
 
   try {
-    console.log("📤 Subiendo foto...");
-    const ref = storage.ref(`fotos/${user.uid}.jpg`);
+    // Subir foto
+    const ref = storage.ref(fotos/${user.uid}.jpg);
     await ref.put(foto);
-    console.log("✅ Foto subida correctamente");
-
     const fotoURL = await ref.getDownloadURL();
-    console.log("🌐 URL de la foto:", fotoURL);
 
-    console.log("📝 Guardando datos en Firestore...");
+    // Guardar datos
     await db.collection("tarjetas").doc(user.uid).set({
-      nombre,
-      link,
-      fotoURL
+      nombre, profesion, empresa, youtube, tiktok, fotoURL
     });
-    console.log("✅ Datos guardados correctamente en Firestore");
 
-    const url = `${window.location.origin}/tarjeta.html?id=${user.uid}`;
-    console.log("🌍 URL de la tarjeta:", url);
-
-    // Mostrar resultado
+    // Generar link y QR
+    const url = ${window.location.origin}/tarjeta.html?id=${user.uid};
     const qrCanvas = document.createElement("canvas");
     QRCode.toCanvas(qrCanvas, url, { width: 150 });
+
     document.getElementById("resultado").innerHTML = `
       <p>✅ Tu tarjeta está lista:</p>
       <a href="${url}" target="_blank">${url}</a><br><br>
     `;
     document.getElementById("resultado").appendChild(qrCanvas);
-
-  } catch (error) {
-    console.error("❌ Error al guardar la tarjeta:", error);
-    alert("Ocurrió un error al guardar la tarjeta. Mira la consola para más detalles.");
+  } catch (err) {
+    alert("Error al guardar tarjeta: " + err.message);
   }
-};
