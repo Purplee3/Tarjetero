@@ -1,32 +1,58 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Creador de Tarjeta</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Tarjeta</title>
+  <link rel="stylesheet" href="style.css">
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
-  <div id="login">
-    <button id="googleLogin">Iniciar sesión con Google</button>
+  <div class="card" id="card">
+    <p>Cargando tarjeta...</p>
   </div>
 
-  <div id="editor" style="display:none;">
-    <p>Hola, <span id="userName"></span></p>
-    <input type="text" id="nombre" placeholder="Nombre" /><br>
-    <input type="url" id="link" placeholder="Enlace de red social" /><br>
-    <input type="file" id="foto" accept="image/*" /><br>
-    <button type="button" id="guardar">Guardar</button>
-    <div id="resultado"></div>
-  </div>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAMcJot3v9EBnUHHDKxmAOdamawSrUN1J0",
+      authDomain: "tarjetero-8aa5e.firebaseapp.com",
+      projectId: "tarjetero-8aa5e",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-  <script src="script.js"></script>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+
+    async function cargarTarjeta() {
+      if (!id) {
+        document.getElementById("card").innerHTML = "<p>Tarjeta no encontrada.</p>";
+        return;
+      }
+
+      const doc = await db.collection("tarjetas").doc(id).get();
+      if (!doc.exists) {
+        document.getElementById("card").innerHTML = "<p>Tarjeta no disponible.</p>";
+        return;
+      }
+
+      const data = doc.data();
+      document.getElementById("card").innerHTML = `
+        <img src="${data.fotoURL}" alt="Foto" class="foto">
+        <h2>${data.nombre}</h2>
+        <p>${data.profesion}</p>
+        <p>${data.empresa}</p>
+
+        <div class="redes">
+          ${data.youtube ? <a href="${data.youtube}" target="_blank"><img src="assets/youtube.png" alt="YouTube"></a> : ""}
+          ${data.tiktok ? <a href="${data.tiktok}" target="_blank"><img src="assets/tiktok.png" alt="TikTok"></a> : ""}
+        </div>
+      `;
+    }
+
+    cargarTarjeta();
+  </script>
 </body>
 </html>
