@@ -5,13 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Creador de Tarjetas</title>
   <link rel="stylesheet" href="style.css" />
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-storage-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 
 <body>
@@ -42,6 +35,107 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- 🔹 Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+  <!-- 🔹 QRCode Generator -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+  <!-- 🔹 Script principal -->
+  <script>
+    // ✅ Configura tu Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAMcJot3v9EBnUHHDKxmAOdamawSrUN1J0",
+      authDomain: "tarjetero-8aa5e.firebaseapp.com",
+      projectId: "tarjetero-8aa5e",
+      storageBucket: "tarjetero-8aa5e.appspot.com",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    const googleLogin = document.getElementById("googleLogin");
+    const editor = document.getElementById("editor");
+    const login = document.getElementById("login");
+    const userName = document.getElementById("userName");
+    const guardarBtn = document.getElementById("guardar");
+
+    // 🔹 LOGIN CON GOOGLE
+    googleLogin.onclick = async () => {
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const result = await auth.signInWithPopup(provider);
+        const user = result.user;
+
+        login.style.display = "none";
+        editor.style.display = "block";
+        userName.textContent = user.displayName;
+      } catch (error) {
+        console.error("❌ Error al iniciar sesión:", error);
+        alert("Error al iniciar sesión: " + error.message);
+      }
+    };
+
+    // 🔹 GUARDAR TARJETA
+    guardarBtn.onclick = async () => {
+      const user = auth.currentUser;
+      const nombre = document.getElementById("nombre").value.trim();
+      const link = document.getElementById("link").value.trim();
+      const foto = document.getElementById("foto").files[0];
+
+      if (!user) {
+        alert("Primero inicia sesión con Google.");
+        return;
+      }
+
+      if (!nombre || !link || !foto) {
+        alert("Completa todos los campos antes de guardar.");
+        return;
+      }
+
+      try {
+        // Subir la foto al storage
+        const ref = storage.ref(`fotos/${user.uid}.jpg`);
+        await ref.put(foto);
+        const fotoURL = await ref.getDownloadURL();
+
+        // Guardar datos en Firestore
+        await db.collection("tarjetas").doc(user.uid).set({
+          nombre,
+          link,
+          fotoURL,
+          userId: user.uid,
+          timestamp: new Date(),
+        });
+
+        // Generar link y QR
+        const url = `${window.location.origin}/tarjeta.html?id=${user.uid}`;
+        const qrCanvas = document.createElement("canvas");
+        QRCode.toCanvas(qrCanvas, url, { width: 150 });
+
+        document.getElementById("resultado").innerHTML = `
+          <p>✅ Tu tarjeta está lista:</p>
+          <a href="${url}" target="_blank">${url}</a><br><br>
+        `;
+        document.getElementById("resultado").appendChild(qrCanvas);
+
+        // ✅ Redirigir automáticamente después de 3 segundos
+        setTimeout(() => {
+          window.location.href = url;
+        }, 3000);
+
+        console.log("✅ Tarjeta guardada correctamente");
+      } catch (error) {
+        console.error("❌ Error al guardar tarjeta:", error);
+        alert("Error al guardar la tarjeta: " + error.message);
+      }
+    };
+  </script>
 </body>
 </html>
