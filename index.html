@@ -6,14 +6,43 @@
   <title>Creador de Tarjetas</title>
   <link rel="stylesheet" href="style.css" />
 
-  <!-- ✅ Firebase SDKs (versión estable para compatibilidad con GitHub Pages) -->
+  <!-- ✅ Firebase v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
-  <!-- ✅ QRCode -->
+  <!-- ✅ QR Code -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      display: flex;
+      justify-content: center;
+      padding: 30px;
+    }
+    .container {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 400px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover { background: #0056b3; }
+    #resultado { margin-top: 20px; }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -31,7 +60,7 @@
       <label>Nombre en la tarjeta:</label>
       <input type="text" id="nombre" placeholder="Tu nombre..." />
 
-      <label>Link principal (ej: Instagram, YouTube o TikTok):</label>
+      <label>Red principal (Instagram, YouTube o TikTok):</label>
       <input type="text" id="link" placeholder="https://..." />
 
       <label>Sube tu foto:</label>
@@ -43,9 +72,8 @@
     </div>
   </div>
 
-  <!-- ✅ Tu script principal -->
   <script>
-    // 🔧 Configuración de Firebase
+    // ✅ Configuración Firebase (tuya)
     const firebaseConfig = {
       apiKey: "AIzaSyAMcJot3v9EBnUHHDKxmAOdamawSrUN1J0",
       authDomain: "tarjetero-8aa5e.firebaseapp.com",
@@ -65,51 +93,53 @@
     const googleLogin = document.getElementById("googleLogin");
     const userName = document.getElementById("userName");
 
-    // 🔹 LOGIN CON GOOGLE
-    googleLogin.addEventListener("click", async () => {
-      try {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        const result = await auth.signInWithPopup(provider);
-        const user = result.user;
+    // 🟢 Detectar si ya hay usuario logueado
+    auth.onAuthStateChanged((user) => {
+      if (user) {
         userName.textContent = user.displayName;
         loginDiv.style.display = "none";
         editorDiv.style.display = "block";
-      } catch (error) {
-        alert("Error al iniciar sesión: " + error.message);
       }
     });
 
-    // 🔹 GUARDAR TARJETA
-    document.getElementById("guardar").addEventListener("click", async () => {
+    // 🟢 Iniciar sesión con Google
+    googleLogin.onclick = () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider)
+        .then((result) => {
+          const user = result.user;
+          userName.textContent = user.displayName;
+          loginDiv.style.display = "none";
+          editorDiv.style.display = "block";
+        })
+        .catch((error) => {
+          alert("Error al iniciar sesión: " + error.message);
+          console.error(error);
+        });
+    };
+
+    // 🟢 Guardar tarjeta
+    document.getElementById("guardar").onclick = async () => {
       const user = auth.currentUser;
       const nombre = document.getElementById("nombre").value.trim();
       const link = document.getElementById("link").value.trim();
       const foto = document.getElementById("foto").files[0];
 
-      if (!user) {
-        alert("Primero inicia sesión con Google.");
-        return;
-      }
-      if (!nombre || !foto || !link) {
-        alert("Completa todos los campos.");
-        return;
-      }
+      if (!user) return alert("Primero inicia sesión.");
+      if (!nombre || !foto || !link) return alert("Completa todos los campos.");
 
       try {
-        // Subir foto al Storage
-        const ref = storage.ref(fotos/${user.uid}.jpg);
+        const ref = storage.ref(`fotos/${user.uid}.jpg`);
         await ref.put(foto);
         const fotoURL = await ref.getDownloadURL();
 
-        // Guardar datos en Firestore
         await db.collection("tarjetas").doc(user.uid).set({
           nombre,
           link,
           fotoURL
         });
 
-        // Generar link y QR
-        const url = ${window.location.origin}/tarjeta.html?id=${user.uid};
+        const url = `${window.location.origin}/tarjeta.html?id=${user.uid}`;
         const qrCanvas = document.createElement("canvas");
         QRCode.toCanvas(qrCanvas, url, { width: 150 });
 
@@ -121,7 +151,7 @@
       } catch (err) {
         alert("Error al guardar tarjeta: " + err.message);
       }
-    });
+    };
   </script>
 </body>
 </html>
