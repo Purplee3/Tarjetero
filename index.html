@@ -6,44 +6,14 @@
   <title>Creador de Tarjetas</title>
   <link rel="stylesheet" href="style.css" />
 
-  <!-- ✅ Firebase v8 -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-
-  <!-- ✅ QR Code -->
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-storage-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      display: flex;
-      justify-content: center;
-      padding: 30px;
-    }
-    .container {
-      background: white;
-      border-radius: 15px;
-      padding: 25px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      width: 90%;
-      max-width: 400px;
-    }
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    button:hover { background: #0056b3; }
-    #resultado { margin-top: 20px; }
-  </style>
 </head>
+
 <body>
   <div class="container">
     <h1>🪪 Creador de Tarjetas</h1>
@@ -60,8 +30,8 @@
       <label>Nombre en la tarjeta:</label>
       <input type="text" id="nombre" placeholder="Tu nombre..." />
 
-      <label>Red principal (Instagram, YouTube o TikTok):</label>
-      <input type="text" id="link" placeholder="https://..." />
+      <label>Link de red social:</label>
+      <input type="text" id="link" placeholder="https://instagram.com/..." />
 
       <label>Sube tu foto:</label>
       <input type="file" id="foto" accept="image/*" />
@@ -72,86 +42,6 @@
     </div>
   </div>
 
-  <script>
-    // ✅ Configuración Firebase (tuya)
-    const firebaseConfig = {
-      apiKey: "AIzaSyAMcJot3v9EBnUHHDKxmAOdamawSrUN1J0",
-      authDomain: "tarjetero-8aa5e.firebaseapp.com",
-      projectId: "tarjetero-8aa5e",
-      storageBucket: "tarjetero-8aa5e.appspot.com",
-      messagingSenderId: "1031258110983",
-      appId: "1:1031258110983:web:8819d24f7b113378f17ea2"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
-
-    const loginDiv = document.getElementById("login");
-    const editorDiv = document.getElementById("editor");
-    const googleLogin = document.getElementById("googleLogin");
-    const userName = document.getElementById("userName");
-
-    // 🟢 Detectar si ya hay usuario logueado
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        userName.textContent = user.displayName;
-        loginDiv.style.display = "none";
-        editorDiv.style.display = "block";
-      }
-    });
-
-    // 🟢 Iniciar sesión con Google
-    googleLogin.onclick = () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider)
-        .then((result) => {
-          const user = result.user;
-          userName.textContent = user.displayName;
-          loginDiv.style.display = "none";
-          editorDiv.style.display = "block";
-        })
-        .catch((error) => {
-          alert("Error al iniciar sesión: " + error.message);
-          console.error(error);
-        });
-    };
-
-    // 🟢 Guardar tarjeta
-    document.getElementById("guardar").onclick = async () => {
-      const user = auth.currentUser;
-      const nombre = document.getElementById("nombre").value.trim();
-      const link = document.getElementById("link").value.trim();
-      const foto = document.getElementById("foto").files[0];
-
-      if (!user) return alert("Primero inicia sesión.");
-      if (!nombre || !foto || !link) return alert("Completa todos los campos.");
-
-      try {
-        const ref = storage.ref(`fotos/${user.uid}.jpg`);
-        await ref.put(foto);
-        const fotoURL = await ref.getDownloadURL();
-
-        await db.collection("tarjetas").doc(user.uid).set({
-          nombre,
-          link,
-          fotoURL
-        });
-
-        const url = `${window.location.origin}/tarjeta.html?id=${user.uid}`;
-        const qrCanvas = document.createElement("canvas");
-        QRCode.toCanvas(qrCanvas, url, { width: 150 });
-
-        document.getElementById("resultado").innerHTML = `
-          <p>✅ Tu tarjeta está lista:</p>
-          <a href="${url}" target="_blank">${url}</a><br><br>
-        `;
-        document.getElementById("resultado").appendChild(qrCanvas);
-      } catch (err) {
-        alert("Error al guardar tarjeta: " + err.message);
-      }
-    };
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
