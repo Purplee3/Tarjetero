@@ -1,4 +1,4 @@
-// Configurar Firebase
+// 🔥 Configuración de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMcJot3v9EBnUHHDKxmAOdamawSrUN1J0",
   authDomain: "tarjetero-8aa5e.firebaseapp.com",
@@ -11,49 +11,49 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
-const storage = firebase.storage();
 const db = firebase.firestore();
+const storage = firebase.storage();
 
+// Elementos
 const googleLogin = document.getElementById("googleLogin");
 const editor = document.getElementById("editor");
 const login = document.getElementById("login");
 const userName = document.getElementById("userName");
 
-// 🔹 Iniciar sesión con Google
+// 🔹 LOGIN CON GOOGLE
 googleLogin.onclick = async () => {
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
     const result = await auth.signInWithPopup(provider);
     const user = result.user;
-
     login.style.display = "none";
     editor.style.display = "block";
     userName.textContent = user.displayName;
-  } catch (error) {
-    alert("❌ No se pudo iniciar sesión: " + error.message);
+  } catch (err) {
+    alert("Error al iniciar sesión: " + err.message);
   }
 };
 
-// 🔹 Guardar tarjeta
+// 🔹 GUARDAR TARJETA
 document.getElementById("guardar").onclick = async () => {
   const user = auth.currentUser;
-  if (!user) {
-    alert("Debes iniciar sesión primero.");
-    return;
-  }
-
   const nombre = document.getElementById("nombre").value.trim();
   const link = document.getElementById("link").value.trim();
   const foto = document.getElementById("foto").files[0];
 
+  if (!user) {
+    alert("Primero inicia sesión con Google.");
+    return;
+  }
+
   if (!nombre || !foto || !link) {
-    alert("Completa todos los campos antes de continuar.");
+    alert("Completa todos los campos.");
     return;
   }
 
   try {
     // Subir foto
-    const ref = storage.ref(fotos/${user.uid}.jpg);
+    const ref = storage.ref(`fotos/${user.uid}.jpg`);
     await ref.put(foto);
     const fotoURL = await ref.getDownloadURL();
 
@@ -64,7 +64,8 @@ document.getElementById("guardar").onclick = async () => {
       fotoURL
     });
 
-    const url = ${window.location.origin}/tarjeta.html?id=${user.uid};
+    // Crear URL y QR
+    const url = `${window.location.origin}/tarjeta.html?id=${user.uid}`;
     const qrCanvas = document.createElement("canvas");
     QRCode.toCanvas(qrCanvas, url, { width: 150 });
 
@@ -73,9 +74,7 @@ document.getElementById("guardar").onclick = async () => {
       <a href="${url}" target="_blank">${url}</a><br><br>
     `;
     document.getElementById("resultado").appendChild(qrCanvas);
-
-  } catch (error) {
-    alert("❌ Error al guardar: " + error.message);
-    console.error(error);
+  } catch (err) {
+    alert("Error al guardar tarjeta: " + err.message);
   }
 };
